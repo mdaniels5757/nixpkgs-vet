@@ -8,8 +8,8 @@
   configPath,
 }:
 let
-  # trace = builtins.trace;
-  trace = (e1: e2: e2);
+  trace = builtins.trace;
+  # trace = (e1: e2: e2);
 
   # https://discourse.nixos.org/t/modify-an-attrset-in-nix/29919/5
   removeAttrByPath =
@@ -151,10 +151,14 @@ let
       ) attrsByDir.${byNameDir.id}
     );
 
-  byNameAttrs = pkgs.lib.foldl pkgs.lib.recursiveUpdate { } (
+  byNameAttrs = builtins.foldl' pkgs.lib.recursiveUpdate { } (
+    let temp =
     map byNameAttrsForDir (
       builtins.filter (dir: builtins.hasAttr dir.id attrsByDir) byNameConfig.by_name_dirs
     )
+    ; in
+    # builtins.trace "byNameAttrs = [\"${builtins.concatStringsSep "\", \"" temp}\"]"
+    temp
   );
 
   attrSetIsOrContainsDerivation =
@@ -294,10 +298,10 @@ let
     byName: nonByName:
     let
       inherit (builtins) isAttrs;
-      byNameNames = builtins.trace "byNameNames is ${builtins.toJSON (builtins.attrNames byName)}" (
+      byNameNames = trace "byNameNames is ${builtins.toJSON (builtins.attrNames byName)}" (
         builtins.attrNames byName
       );
-      nonByNameNames = builtins.trace "nonByNameNames is ${builtins.toJSON (builtins.attrNames nonByName)}" (
+      nonByNameNames = trace "nonByNameNames is ${builtins.toJSON (builtins.attrNames nonByName)}" (
         builtins.attrNames nonByName
       );
       onlyByName = pkgs.lib.subtractLists nonByNameNames byNameNames;
@@ -306,7 +310,7 @@ let
     in
     builtins.listToAttrs (
       (map (x: {
-        name = x;
+        name = builtins.trace "eval.nix:313: name = ${x}" x;
         value = byName.${x};
       }) onlyByName)
       ++ (map (x: {
@@ -319,7 +323,7 @@ let
           "x = ${x}; byName.${x} = ${builtins.toJSON byName.${x}}; nonByName.${x} = ${builtins.toJSON nonByName.${x}}"
           (
             if
-              !(isAttrs byName.${x}) # And nonByName.${x} is or is not an attrset, we don't care.
+              !(isAttrs byName.${x}) # We don't care if nonByName.${x} is or is not an attrset.
             then
               {
                 name = x;
