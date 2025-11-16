@@ -295,67 +295,67 @@ let
   # ) (builtins.removeAttrs pkgs (attrs ++ [ "lib" ])); # Need to exclude lib to avoid infinite recursion
 
   customMergeAttrs =
-    byName: nonByName:
+    byNameAs: nonByNameAs:
     let
       inherit (builtins) isAttrs;
-      byNameNames = trace "byNameNames is ${builtins.toJSON (builtins.attrNames byName)}" (
-        builtins.attrNames byName
+      byNameNames = trace "byNameNames is ${builtins.toJSON (builtins.attrNames byNameAs)}" (
+        builtins.attrNames byNameAs
       );
-      nonByNameNames = trace "nonByNameNames is ${builtins.toJSON (builtins.attrNames nonByName)}" (
-        builtins.attrNames nonByName
+      nonByNameNames = trace "nonByNameNames is ${builtins.toJSON (builtins.attrNames nonByNameAs)}" (
+        builtins.attrNames nonByNameAs
       );
-      onlyByName = pkgs.lib.subtractLists nonByNameNames byNameNames;
-      onlyNonByName = pkgs.lib.subtractLists byNameNames nonByNameNames;
-      inBothLists = pkgs.lib.intersectLists byNameNames nonByNameNames;
+      onlyByNameNames = pkgs.lib.subtractLists nonByNameNames byNameNames;
+      onlyNonByNameNames = pkgs.lib.subtractLists byNameNames nonByNameNames;
+      namesInBothLists = pkgs.lib.intersectLists byNameNames nonByNameNames;
     in
     builtins.listToAttrs (
       (map (x: {
         name = builtins.trace "eval.nix:313: name = ${x}" x;
-        value = byName.${x};
-      }) onlyByName)
+        value = builtins.trace "eval.nix:314: name = ${x}" byNameAs.${x};
+      }) onlyByNameNames)
       ++ (map (x: {
         name = x;
-        value = nonByName.${x};
-      }) onlyNonByName)
+        value = nonByNameAs.${x};
+      }) onlyNonByNameNames)
       ++ (map (
         x:
         builtins.trace
-          "x = ${x}; byName.${x} = ${builtins.toJSON byName.${x}}; nonByName.${x} = ${builtins.toJSON nonByName.${x}}"
+          "x = ${x}; byName.${x} = ${builtins.toJSON byNameAs.${x}}; nonByName.${x} = ${builtins.toJSON nonByNameAs.${x}}"
           (
             if
-              !(isAttrs byName.${x}) # We don't care if nonByName.${x} is or is not an attrset.
+              !(isAttrs byNameAs.${x}) # We don't care if nonByName.${x} is or is not an attrset.
             then
               {
                 name = x;
-                value = nonByName.${x};
+                value = nonByNameAs.${x};
               }
-            else if !(isAttrs nonByName.${x}) then
+            else if !(isAttrs nonByNameAs.${x}) then
               throw "Shouldn't happen??? "
-            else if byName.${x} ? "ByName" && nonByName.${x} ? "NonByName" then
+            else if byNameAs.${x} ? "ByName" && nonByNameAs.${x} ? "NonByName" then
               {
                 name = x;
                 value = {
-                  ByName = nonByName.${x}.NonByName;
+                  ByName = nonByNameAs.${x}.NonByName;
                 };
               }
             else if
-              (builtins.removeAttrs byName.${x} [
+              (builtins.removeAttrs byNameAs.${x} [
                 "NonByName"
                 "ByName"
               ]) != { }
-              && nonByName.${x} ? "NonByName"
+              && nonByNameAs.${x} ? "NonByName"
             then
               {
                 name = x;
-                value = byName.${x};
+                value = byNameAs.${x};
               }
             else
               {
                 name = x;
-                value = customMergeAttrs byName.${x} nonByName.${x};
+                value = customMergeAttrs byNameAs.${x} nonByNameAs.${x};
               }
           )
-      ) inBothLists)
+      ) namesInBothLists)
     );
 
   # All attributes
