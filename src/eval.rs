@@ -210,6 +210,7 @@ pub fn check_values(
             "--readonly-mode",
             "--restrict-eval",
             "--show-trace",
+            "--max-call-depth", "1000",
         ])
         // Add the work directory to the NIX_PATH so that it can be accessed in restrict-eval mode.
         .arg("-I")
