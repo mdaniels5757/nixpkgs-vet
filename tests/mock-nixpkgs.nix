@@ -90,15 +90,7 @@ let
                 ]
               )
             );
-            fileNameToAttrPath =
-              name:
-              if byNameDir.unversioned_attr_prefix != "" then
-                [
-                  byNameDir.unversioned_attr_prefix
-                  name
-                ]
-              else
-                [ name ];
+            fileNameToAttrPath = name: byNameDir.attr_path ++ [ name ];
             attrSetList = map (
               fileName:
               lib.setAttrByPath (fileNameToAttrPath fileName) (

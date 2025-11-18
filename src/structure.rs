@@ -24,8 +24,8 @@ static PACKAGE_NAME_REGEX: LazyLock<Regex> =
 struct SerializableByNameDir {
     id: String,
     path: String,
+    attr_path: Vec<String>,
     attr_path_regex: String,
-    unversioned_attr_prefix: String,
     all_packages_path: String, // Includes a leading slash, but is still a relative path.
     aliases_path: Option<String>, // Includes a leading slash, but is still a relative path.
 }
@@ -39,8 +39,8 @@ struct SerializableConfig {
 pub struct ByNameDir {
     pub id: String,
     pub path: RelativePathBuf,
+    pub attr_path: Vec<String>,
     pub attr_path_regex: Regex,
-    pub unversioned_attr_prefix: String,
     pub all_packages_path: String, // Includes a leading slash, but is still a relative path.
     pub aliases_path: Option<String>, // Includes a leading slash, but is still a relative path.
 }
@@ -78,12 +78,11 @@ pub fn read_config(config_file: &Path) -> Config {
         .by_name_dirs
         .iter()
         .map(|x| {
-            let regex_str = x.attr_path_regex.as_str();
             ByNameDir {
                 id: x.id.to_owned(),
                 path: RelativePathBuf::from(x.path.as_str()),
-                attr_path_regex: regex::Regex::new(regex_str).unwrap(),
-                unversioned_attr_prefix: x.unversioned_attr_prefix.to_owned(),
+                attr_path: x.attr_path.to_owned(),
+                attr_path_regex: regex::Regex::new(&x.attr_path_regex).unwrap(),
                 all_packages_path: x.all_packages_path.to_owned(),
                 aliases_path: x.aliases_path.to_owned(),
             }
@@ -379,11 +378,7 @@ fn check_package<'a>(
             &relative_package_dir.to_path(path),
         )?);
 
-        let attr_path_prefix = if !&by_name_dir.unversioned_attr_prefix.is_empty() {
-            by_name_dir.unversioned_attr_prefix.to_owned() + "."
-        } else {
-            "".to_string()
-        };
+        let attr_path_prefix = by_name_dir.attr_path.join(".");
         let attr_path = attr_path_prefix + &package_name;
         result.map(|_| ByNamePackage {
             attr_path,

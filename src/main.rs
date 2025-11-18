@@ -187,7 +187,6 @@ fn main() -> ExitCode {
 /// - `main_nixpkgs`: Path to the main Nixpkgs to check.
 /// - `config`: The by-name configuration object
 fn process(base_nixpkgs: &Path, main_nixpkgs: &Path, config: &Config) -> Status {
-    // println!("{}:{}: base_nixpkgs {base_nixpkgs:?}, main_nixpkgs {main_nixpkgs:?}", file!(), line!());
     let (base_result, main_result) = std::thread::scope(|s| {
         let base_thread = s.spawn(move || check_nixpkgs(base_nixpkgs, config));
         let main_thread = s.spawn(move || check_nixpkgs(main_nixpkgs, config));
@@ -204,14 +203,12 @@ fn process(base_nixpkgs: &Path, main_nixpkgs: &Path, config: &Config) -> Status 
             Err(e) => panic::resume_unwind(e),
         };
 
-        // println!("Checking base with by_name_dir {}", by_name_dir.path);
-        // let base_result = check_nixpkgs(base_nixpkgs, by_name_dir, config);
-        // println!("Checking main with by_name_dir {}", by_name_dir.path);
-        // let main_result = check_nixpkgs(main_nixpkgs, by_name_dir, config);
-        // println!(
-        //     "Done with both base and main for by_name_dir {}",
-        //     by_name_dir.path
-        // );
+        // println!("Checking base");
+        // let base_result = check_nixpkgs(base_nixpkgs, config);
+        // println!("base_result {:?}", base_result);
+        // println!("Checking main");
+        // let main_result = check_nixpkgs(main_nixpkgs, config);
+        // println!("main_result {:?}", main_result);
 
         (base_result, main_result)
     });

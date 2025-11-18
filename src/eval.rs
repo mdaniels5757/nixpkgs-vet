@@ -132,7 +132,6 @@ fn mutate_nix_instatiate_arguments_based_on_cfg(
     work_dir_path: &Path,
     command: &mut process::Command,
 ) -> anyhow::Result<()> {
-    // println!("{}:{}: work dir path: {work_dir_path:?}", file!(), line!());
     const MOCK_NIXPKGS: &[u8] = include_bytes!("../tests/mock-nixpkgs.nix");
     let mock_nixpkgs_path = work_dir_path.join("mock-nixpkgs.nix");
     fs::write(&mock_nixpkgs_path, MOCK_NIXPKGS)?;
@@ -147,10 +146,6 @@ fn mutate_nix_instatiate_arguments_based_on_cfg(
 
     command.arg("-I");
     command.arg(format!("test-nixpkgs/lib={nixpkgs_lib}"));
-
-    command.arg("--show-trace");
-    command.arg("--verbose");
-    command.arg("--debug");
 
     Ok(())
 }
@@ -174,21 +169,9 @@ pub fn check_values(
     // Canonicalize the path so that if a symlink were returned, we wouldn't ask Nix to follow it.
     let work_dir_path = work_dir.path().canonicalize()?;
 
-    // println!(
-    //     "{}:{}: package_names for {full_path}: {}",
-    //     file!(),
-    //     line!(),
-    //     packages
-    //         .iter()
-    //         .map(|x| x.0.to_owned())
-    //         .collect::<Vec<_>>()
-    //         .join(", ")
-    // );
-
     // Write the list of packages we need to check into a temporary JSON file.
     let package_names_path = work_dir_path.join("package-names.json");
     let package_names_file = fs::File::create(&package_names_path)?;
-    let packages = packages.to_owned();
     serde_json::to_writer(&package_names_file, &packages).with_context(|| {
         format!(
             "Failed to serialise the package names to the work dir {}",
@@ -213,8 +196,6 @@ pub fn check_values(
     let nix_package = env::var("NIXPKGS_VET_NIX_PACKAGE")
         .with_context(|| "Could not get environment variable NIXPKGS_VET_NIX_PACKAGE")?;
 
-    println!("packages: {packages:?}");
-
     // With restrict-eval, only paths in NIX_PATH can be accessed. We explicitly specify them here.
     let mut command = process::Command::new(format!("{nix_package}/bin/nix-instantiate"));
     command
@@ -228,6 +209,7 @@ pub fn check_values(
             "--strict",
             "--readonly-mode",
             "--restrict-eval",
+            "--show-trace",
         ])
         // Add the work directory to the NIX_PATH so that it can be accessed in restrict-eval mode.
         .arg("-I")
@@ -266,7 +248,6 @@ pub fn check_values(
     );
 
     if !result.status.success() {
-        // println!("{}:{}: : eval failed for {full_path}", file!(), line!());
         // Early return in case evaluation fails
         return Ok(npv_120::NixEvalError::new(String::from_utf8_lossy(&result.stderr)).into());
     }
@@ -279,29 +260,30 @@ pub fn check_values(
                 String::from_utf8_lossy(&result.stdout)
             )
         })?;
+    // println!("eval.rs:263: attributes = {attributes:?}");
 
     let check_result = validation::sequence(
         attributes
             .into_iter()
-            .map(|(attribute_name, attribute_value)| {
-                // println!("{}:{}: attribute_name: {attribute_name:?}; attribute_value: {attribute_value:?}", file!(), line!());
+            .map(|(attribute_path, attribute_value)| {
+                println!("{}:{}: attribute_path: {attribute_path:?}; attribute_value: {attribute_value:?}", file!(), line!());
                 let check_result = match attribute_value {
                     Attribute::NonByName(non_by_name_attribute) => handle_non_by_name_attribute(
                         nixpkgs_path,
                         nix_file_store,
-                        &attribute_name.join("."),
+                        &attribute_path.join("."),
                         non_by_name_attribute,
                         config,
                     )?,
                     Attribute::ByName(by_name_attribute) => by_name(
                         nix_file_store,
                         nixpkgs_path,
-                        &attribute_name.join("."),
+                        &attribute_path.join("."),
                         by_name_attribute,
                         config,
                     )?,
                 };
-                Ok::<_, anyhow::Error>(check_result.map(|value| (attribute_name.clone(), value)))
+                Ok::<_, anyhow::Error>(check_result.map(|value| (attribute_path, value)))
             })
             .collect_vec()?,
     );
@@ -325,11 +307,11 @@ fn by_name(
     by_name_attribute: ByNameAttribute,
     config: &Config,
 ) -> validation::Result<ratchet::Package> {
-    // println!(
-    //     "{}:{}:  attribute_name: {attribute_name}; by_name_attribute: {by_name_attribute:?}",
-    //     file!(),
-    //     line!()
-    // );
+    println!(
+        "{}:{}:  attribute_name: {attribute_name}; by_name_attribute: {by_name_attribute:?}",
+        file!(),
+        line!()
+    );
     // At this point we know that `pkgs/by-name/fo/foo/package.nix` has to exist.  This match
     // decides whether the attribute `foo` is defined accordingly and whether a legacy manual
     // definition could be removed.
@@ -429,12 +411,7 @@ fn by_name(
                                 )
                             })?;
 
-                        // println!(
-                        //     "{}:{}: : attribute_name: {attribute_name}; is_semantic_call_package: {is_semantic_call_package}; optional_syntactic_call_package: {optional_syntactic_call_package:?}; definition: {definition}; location: {location:?}",
-                        //     file!(),
-                        //     line!()
-                        // );
-
+                        println!("eval.rs:407: about to call by_name_override for {attribute_name}");
                         by_name_override(
                             attribute_name,
                             is_semantic_call_package,
@@ -452,17 +429,11 @@ fn by_name(
                 }
             };
 
-            // println!(
-            //     "{}:{}: attribute_name: {attribute_name}; is_derivation_result: {is_derivation_result:?}; variant_result: {variant_result:?}",
-            //     file!(),
-            //     line!()
-            // );
             // Independently report problems about whether it's a derivation and the callPackage
             // variant.
             is_derivation_result.and_(variant_result)
         }
     };
-    /*let result =*/
     Ok(
         // Packages being checked in this function are _always_ already defined in a `by-name` directory,
         // so instead of repeating ourselves all the time to define `uses_by_name`, just set it
@@ -471,9 +442,7 @@ fn by_name(
             manual_definition,
             uses_by_name: Tight,
         }),
-    ) //;
-    // println!("{}:{}: : result: {result:?}", file!(), line!());
-    // result
+    )
 }
 
 /// Handles the case for packages in a `by-name` directory that are manually overridden,
@@ -538,11 +507,6 @@ fn by_name_override(
     // Manual definitions with empty arguments are not allowed anymore, but existing ones should
     // continue to be allowed. This is the state to migrate away from.
     if syntactic_call_package.empty_arg {
-        // println!(
-        //     "{}:{}: : here; attribute_name: {attribute_name}",
-        //     file!(),
-        //     line!()
-        // );
         Success(Loose(
             npv_107::ByNameOverrideContainsEmptyArgument::new(
                 attribute_name,
@@ -569,8 +533,6 @@ fn handle_non_by_name_attribute(
 ) -> validation::Result<ratchet::Package> {
     use NonByNameAttribute::EvalSuccess;
     use ratchet::RatchetState::{Loose, NonApplicable, Tight};
-
-    // println!("{}:{}: attribute_name: {attribute_name}", file!(), line!());
 
     // The ratchet state whether this attribute uses a `by-name` directory
     //
