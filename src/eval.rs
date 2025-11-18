@@ -266,7 +266,7 @@ pub fn check_values(
         attributes
             .into_iter()
             .map(|(attribute_path, attribute_value)| {
-                println!("{}:{}: attribute_path: {attribute_path:?}; attribute_value: {attribute_value:?}", file!(), line!());
+                // println!("{}:{}: attribute_path: {attribute_path:?}; attribute_value: {attribute_value:?}", file!(), line!());
                 let check_result = match attribute_value {
                     Attribute::NonByName(non_by_name_attribute) => handle_non_by_name_attribute(
                         nixpkgs_path,
@@ -307,11 +307,11 @@ fn by_name(
     by_name_attribute: ByNameAttribute,
     config: &Config,
 ) -> validation::Result<ratchet::Package> {
-    println!(
-        "{}:{}:  attribute_name: {attribute_name}; by_name_attribute: {by_name_attribute:?}",
-        file!(),
-        line!()
-    );
+    // println!(
+    //     "{}:{}:  attribute_name: {attribute_name}; by_name_attribute: {by_name_attribute:?}",
+    //     file!(),
+    //     line!()
+    // );
     // At this point we know that `pkgs/by-name/fo/foo/package.nix` has to exist.  This match
     // decides whether the attribute `foo` is defined accordingly and whether a legacy manual
     // definition could be removed.
@@ -411,7 +411,7 @@ fn by_name(
                                 )
                             })?;
 
-                        println!("eval.rs:407: about to call by_name_override for {attribute_name}");
+                        // println!("eval.rs:407: about to call by_name_override for {attribute_name}");
                         by_name_override(
                             attribute_name,
                             is_semantic_call_package,

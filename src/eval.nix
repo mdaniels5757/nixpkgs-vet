@@ -8,11 +8,13 @@
   configPath,
 }:
 let
-  attrs = builtins.trace "attrs: ${builtins.readFile attrsPath}" (builtins.fromJSON (builtins.readFile attrsPath));
+  # attrs = builtins.trace "attrs: ${builtins.readFile attrsPath}" (builtins.fromJSON (builtins.readFile attrsPath));
+  attrs = builtins.fromJSON (builtins.readFile attrsPath);
   byNameConfig = builtins.fromJSON (builtins.readFile configPath);
   byNameConfigIds = map (x: x.id) byNameConfig.by_name_dirs;
   getConfigById = id: builtins.head (builtins.filter (x: x.id == id) byNameConfig.by_name_dirs);
-  attrsByDir = let val = builtins.groupBy (x: x.by_name_dir_id) attrs; in builtins.trace "eval.nix:15: attrsByDir = ${builtins.toJSON val}" val;
+  # attrsByDir = let val = builtins.groupBy (x: x.by_name_dir_id) attrs; in builtins.trace "eval.nix:15: attrsByDir = ${builtins.toJSON val}" val;
+  attrsByDir = builtins.groupBy (x: x.by_name_dir_id) attrs;
   packageNamesFromDir = dirId: if builtins.hasAttr dirId attrsByDir then map (x: x.package_name) attrsByDir.${dirId} else [ ];
   pkgSetForDir = dirId: if pkgs.lib.hasAttrByPath (getConfigById dirId).attr_path pkgs
                         then pkgs.lib.getAttrFromPath (getConfigById dirId).attr_path pkgs
@@ -72,7 +74,8 @@ let
       else
         {
           AttributeSet = {
-            is_derivation = pkgs.lib.isDerivation (builtins.trace ["eval.nix:72: value:" value] value);
+            is_derivation = pkgs.lib.isDerivation value;
+            # is_derivation = pkgs.lib.isDerivation (builtins.trace ["eval.nix:72: value:" value] value);
             definition_variant =
               if !value ? _callPackageVariant then
                 { ManualDefinition.is_semantic_call_package = false; }
@@ -93,7 +96,8 @@ let
         else
           # Evaluation failures are not allowed, so don't try to catch them.
           { Existing = attrInfo name pkgSet.${name} pkgSet; };
-    }) (builtins.trace "eval.nix:96: calling packageNamesFromDir with dirId ${dirId}" (packageNamesFromDir dirId))
+    # }) (builtins.trace "eval.nix:96: calling packageNamesFromDir with dirId ${dirId}" (packageNamesFromDir dirId))
+    }) (packageNamesFromDir dirId)
   );
 
   # Information on all attributes that exist but are not in `pkgs/by-name`.
@@ -117,7 +121,8 @@ let
         output
       ; } else { EvalFailure = null; };
     }
-  ) (builtins.removeAttrs pkgSet (builtins.trace "eval.nix:120: calling packageNamesFromDir with dirId ${dirId}" (builtins.trace "result of calling (packageNamesFromDir \"${dirId}\"): ${builtins.toJSON (packageNamesFromDir dirId)}" (packageNamesFromDir dirId))));
+  ) (packageNamesFromDir dirId);
+  # ) (builtins.removeAttrs pkgSet (builtins.trace "eval.nix:120: calling packageNamesFromDir with dirId ${dirId}" (builtins.trace "result of calling (packageNamesFromDir \"${dirId}\"): ${builtins.toJSON (packageNamesFromDir dirId)}" (packageNamesFromDir dirId))));
 
   # All attributes
   attributesForDir = dirId: pkgSet: pkgs.lib.recursiveUpdate (byNameAttrsByDir dirId pkgSet) (nonByNameAttrsByDir dirId pkgSet);
