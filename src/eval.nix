@@ -96,8 +96,8 @@ let
         else
           # Evaluation failures are not allowed, so don't try to catch them.
           { Existing = attrInfo name pkgSet.${name} pkgSet; };
-    # }) (builtins.trace "eval.nix:96: calling packageNamesFromDir with dirId ${dirId}" (packageNamesFromDir dirId))
-    }) (packageNamesFromDir dirId)
+    }) (builtins.trace "eval.nix:96: calling packageNamesFromDir with dirId ${dirId}" (packageNamesFromDir dirId))
+    # }) (builtins.attrNames pkgSet)
   );
 
   # Information on all attributes that exist but are not in `pkgs/by-name`.
@@ -120,8 +120,8 @@ let
         (let val = ["eval.nix:117:" { inherit name output value; }]; in val)
         output
       ; } else { EvalFailure = null; };
-    }
-  ) (packageNamesFromDir dirId);
+    } 
+  ) (builtins.removeAttrs pkgSet (packageNamesFromDir dirId));
   # ) (builtins.removeAttrs pkgSet (builtins.trace "eval.nix:120: calling packageNamesFromDir with dirId ${dirId}" (builtins.trace "result of calling (packageNamesFromDir \"${dirId}\"): ${builtins.toJSON (packageNamesFromDir dirId)}" (packageNamesFromDir dirId))));
 
   # All attributes
@@ -144,10 +144,10 @@ let
         pkgSet = pkgSetForDir dirId;
         attributes = (attributesForDir dirId pkgSet);
     in
-      (map (name: [
+      (pkgs.lib.mapAttrsToList (name: value: [
         (baseAttrPath ++ [name])
-        (attributes.${name})
-      ]) (builtins.attrNames attributes))
+        value
+      ]) attributes)
   ) byNameConfigIds;
   temp' = builtins.concatLists temp;
 in
