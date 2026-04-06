@@ -1,3 +1,5 @@
 target
 .direnv
 result*
+node_modules
+package-lock.json # No need to commit, as we only use npm for dev dependencies
