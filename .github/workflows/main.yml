@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      run-release-step:
+        type: boolean
 
 # This makes sure to only run one instance of this workflow per individual PR and pushes.
 # We need this especially for the release step, because it has side effects.
@@ -19,9 +23,12 @@ concurrency:
   # Better wait until it's done
   cancel-in-progress: ${{ github.event_name != 'pull' }}
 
+permissions: {}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@v6
 
@@ -33,9 +40,43 @@ jobs:
       - name: build
         run: nix-build -A ci
 
+  build-and-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' ||  inputs.run-release-step }}
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            max-jobs = 1
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - run: npm i
+
+      - name: build
+        run: nix-build -A ci
+      
+      - name: Create Release Pull Request
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          commit: release
+          title: Pending Release
+
+      - name: install cargo-set-version
+        run: nix-env --install --file default.nix -A pkgs.cargo-edit
+
       - name: release
-        if: ${{ github.event_name == 'push' }}
         run: scripts/release.sh
+        if: steps.changesets.outputs.hasChangesets == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
 
