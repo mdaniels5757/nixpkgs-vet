@@ -16,9 +16,12 @@ root=$(git rev-parse --show-toplevel)
 rev=$(git -C "$root" rev-parse HEAD)
 repository=${GITHUB_REPOSITORY:-NixOS/nixpkgs-vet}
 
-# Get the version from the Cargo.toml file
+# Get the version from the package.json file
 version=$(nixeval "$root" -A version)
 echo "Current version is $version"
+
+# Set the version of the Cargo.toml file
+cargo set-version $version
 
 if existingRelease=$(gh api \
   -H "Accept: application/vnd.github+json" \
