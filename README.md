@@ -1,6 +1,6 @@
 # Nixpkgs vet (check) tool
 
-This repository implements a program  which checks Nixpkgs for many sorts of defects, both major and minor. It's named `nixpkgs-vet`, since it '[vets](https://en.wiktionary.org/wiki/vet#Verb)' contributions to Nixpkgs.
+This repository implements a program which checks Nixpkgs for many sorts of defects, both major and minor. It's named `nixpkgs-vet`, since it '[vets](https://en.wiktionary.org/wiki/vet#Verb)' contributions to Nixpkgs.
 
 It implements all checks for [Nixpkgs' `pkgs/by-name` directory](https://github.com/NixOS/nixpkgs/tree/master/pkgs/by-name) as part of [RFC 140](https://github.com/NixOS/rfcs/pull/140).
 
