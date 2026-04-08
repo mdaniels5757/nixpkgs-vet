@@ -1,0 +1,60 @@
+[package]
+versioned_files = ["Cargo.toml", "Cargo.lock"]
+changelog = "CHANGELOG.md"
+
+[github]
+owner = "mdaniels5757" # FIXME: switch to NixOS
+repo = "nixpkgs-vet"
+
+# prepare-release workflow
+[[workflows]]
+name = "prepare-release"
+
+[[workflows.steps]]
+type = "Command"
+command = "git switch -c release"
+
+[[workflows.steps]]
+type = "PrepareRelease"
+
+[[workflows.steps]]
+type = "Command"
+command = "git commit -m \"chore: prepare release $version\""
+
+[[workflows.steps]]
+type = "Command"
+command = "git push --force --set-upstream origin release"
+
+[[workflows.steps]]
+type = "CreatePullRequest"
+base = "main"
+
+[workflows.steps.title]
+template = "chore: prepare release $version"
+
+[workflows.steps.body]
+template = "This PR was created by Knope. Merging it will create a new release.\n\n$changelog"
+
+# release workflow
+[[workflows]]
+name = "release"
+
+[[workflows.steps]]
+type = "Release"
+
+# document-change workflow
+[[workflows]]
+name = "document-change"
+help_text = "Create a new change file to be included in the next release"
+
+[[workflows.steps]]
+type = "CreateChangeFile"
+
+# get-version workflow
+[[workflows]]
+name = "get-version"
+help_text = "Get the current version of the project"
+
+[[workflows.steps]]
+type = "Command"
+command = 'echo "$version"'
