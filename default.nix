@@ -35,8 +35,9 @@ let
     # Used to find the project root
     projectRootFile = "Cargo.toml";
 
-    programs.rustfmt.enable = true;
+    programs.actionlint.enable = true;
     programs.nixfmt.enable = true;
+    programs.rustfmt.enable = true;
     programs.shfmt.enable = true;
     settings.formatter.shfmt.options = [ "--space-redirects" ];
   };
