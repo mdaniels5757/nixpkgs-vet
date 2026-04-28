@@ -59,11 +59,11 @@ let
         cargo-audit
         cargo-edit
         cargo-outdated
+        defaultNixPackage
         npins
         rust-analyzer
         rustfmt
         treefmtEval.config.build.wrapper
-        defaultNixPackage
       ];
     };
 
