@@ -1,4 +1,4 @@
-# nixpkgs-vet
+# Nixpkgs vet (check) tool
 
 This repository implements a program  which checks Nixpkgs for many sorts of defects, both major and minor. It's named `nixpkgs-vet`, since it '[vets](https://en.wiktionary.org/wiki/vet#Verb)' contributions to Nixpkgs.
 
