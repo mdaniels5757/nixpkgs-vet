@@ -1,3 +1,9 @@
+## 0.3.3 (2026-06-13)
+
+### Features
+
+* **very important feature** by @mdaniels5757 (#12)
+
 ## 0.3.2 (2026-06-05)
 
 Fixed release of v0.3.1.
